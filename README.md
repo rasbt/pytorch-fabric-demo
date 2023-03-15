@@ -107,7 +107,8 @@ def plot_logs(log_dir):
 if __name__ == "__main__":
 
     print(watermark(packages="torch,lightning,transformers", python=True))
--    print("Torch CUDA available?", torch.cuda.is_available())    device = "cuda" if torch.cuda.is_available() else "cpu"
+    print("Torch CUDA available?", torch.cuda.is_available())    
+-   device = "cuda" if torch.cuda.is_available() else "cpu"
     torch.manual_seed(123)
 
     ##########################
@@ -199,8 +200,8 @@ if __name__ == "__main__":
         optimizer=optimizer,
         train_loader=train_loader,
         val_loader=val_loader,
--         device=device
-+         fabric=fabric
+-       device=device
++       fabric=fabric
     )
 
     end = time.time()
