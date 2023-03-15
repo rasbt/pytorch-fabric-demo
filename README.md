@@ -8,6 +8,10 @@ This repository shows a quick demo for how to modify PyTorch code (here: finetun
 
 On a single A100 GPU, the PyTorch code in [src/1_pytorch-distilbert.py](src/1_pytorch-distilbert.py) takes about 24.8 min to run. After adding a few lines for [Fabric](https://lightning.ai/docs/fabric/stable/) as shown in [src/2_pytorch-fabric-distilbert.py](src/2_pytorch-fabric-distilbert.py), it now runs in 1.78 min on 4 A100 GPUs. That's a 14x speed-up!
 
+You can install `Lightning` + `Fabric` via
+
+    pip install lightning
+
 Below is the file diff for reference.
 
 ```diff
