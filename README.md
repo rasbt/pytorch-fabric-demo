@@ -61,7 +61,7 @@ def plot_logs(log_dir):
 - def train(num_epochs, model, optimizer, train_loader, val_loader, device):
 + def train(num_epochs, model, optimizer, train_loader, val_loader, fabric):
 
-    for epoch in range(num_epochs):
+      for epoch in range(num_epochs):
 -         train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
 +         train_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
 
@@ -73,8 +73,8 @@ def plot_logs(log_dir):
 
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"]) 
             optimizer.zero_grad()
--             outputs["loss"].backward()
-+             fabric.backward(outputs["loss"])
+-            outputs["loss"].backward()
++            fabric.backward(outputs["loss"])
 
             ### UPDATE MODEL PARAMETERS
             optimizer.step()
@@ -91,11 +91,11 @@ def plot_logs(log_dir):
         ### MORE LOGGING
         model.eval()
         with torch.no_grad():
--             val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
-+             val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
+-            val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
++            val_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
             for batch in val_loader:
--                 for s in ["input_ids", "attention_mask", "label"]:
--                     batch[s] = batch[s].to(device)
+-                for s in ["input_ids", "attention_mask", "label"]:
+-                    batch[s] = batch[s].to(device)
                 outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
                 predicted_labels = torch.argmax(outputs["logits"], 1)
                 val_acc.update(predicted_labels, batch["label"])
@@ -107,7 +107,7 @@ def plot_logs(log_dir):
 if __name__ == "__main__":
 
     print(watermark(packages="torch,lightning,transformers", python=True))
--     print("Torch CUDA available?", torch.cuda.is_available())    device = "cuda" if torch.cuda.is_available() else "cpu"
+-    print("Torch CUDA available?", torch.cuda.is_available())    device = "cuda" if torch.cuda.is_available() else "cpu"
     torch.manual_seed(123)
 
     ##########################
@@ -176,17 +176,17 @@ if __name__ == "__main__":
     ### 4 Initializing the Model
     #########################################
 
-+     fabric = Fabric(accelerator="cuda", devices=4, strategy="deepspeed_stage_2", precision="16-mixed")
-+     fabric.launch()
++    fabric = Fabric(accelerator="cuda", devices=4, strategy="deepspeed_stage_2", precision="16-mixed")
++    fabric.launch()
 
     model = AutoModelForSequenceClassification.from_pretrained(
         "distilbert-base-uncased", num_labels=2)
 
--     model.to(device)
+-   model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=5e-5)
 
-+     model, optimizer = fabric.setup(model, optimizer)
-+     train_loader, val_loader, test_loader = fabric.setup_dataloaders(train_loader, val_loader, test_loader)
++    model, optimizer = fabric.setup(model, optimizer)
++    train_loader, val_loader, test_loader = fabric.setup_dataloaders(train_loader, val_loader, test_loader)
 
     #########################################
     ### 5 Finetuning
@@ -209,11 +209,11 @@ if __name__ == "__main__":
 
     with torch.no_grad():
         model.eval()
--         test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
-+         test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
+-       test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(device)
++       test_acc = torchmetrics.Accuracy(task="multiclass", num_classes=2).to(fabric.device)
         for batch in test_loader:
--             for s in ["input_ids", "attention_mask", "label"]:
--                 batch[s] = batch[s].to(device)
+-           for s in ["input_ids", "attention_mask", "label"]:
+-               batch[s] = batch[s].to(device)
             outputs = model(batch["input_ids"], attention_mask=batch["attention_mask"], labels=batch["label"])
             predicted_labels = torch.argmax(outputs["logits"], 1)
             test_acc.update(predicted_labels, batch["label"])
